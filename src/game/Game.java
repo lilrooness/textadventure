@@ -1,11 +1,11 @@
 package game;
 
-import java.util.HashMap;
+import server.*;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by Joseph Frangoudes on 04/02/2015.
@@ -14,85 +14,60 @@ import java.util.Set;
  */
 public class Game {
 
-  private Map<Player, Queue<String>> messegeQueues;
-  private List<Battle> currentBattles;
+    private List<Battle> currentBattles;
+    List<Player> players;
 
-  public Game() {
-    messegeQueues = new HashMap<>();
-  }
-
-  public String getPlayerMessege(Player player) {
-    if(messegeQueues.containsKey(player)) {
-      return messegeQueues.get(player).remove();
-    }
-    return null;
-  }
-
-  public void addPlayer(Player player) {
-    if(!messegeQueues.containsKey(player)) {
-      messegeQueues.put(player, new PriorityQueue<>());
-    }
-  }
-
-  public void sendMessage(Player player, String messege) {
-    if(messegeQueues.containsKey(player)) {
-      messegeQueues.get(player).add(messege);
-    }
-  }
-
-  public void sendAll(String messege) {
-    Set<Player> players = messegeQueues.keySet();
-    for (Player player : players) {
-      sendMessage(player, messege);
-    }
-  }
-
-  public Player getPlayerByName(String name) {
-    Set<Player> players = messegeQueues.keySet();
-
-    for (Player player : players) {
-      if(name.equals(player.getName())) {
-        return player;
-      }
+    public Game() {
+        players = new ArrayList<>();
     }
 
-    return null;
+    public ServerEvent processMessege(Messege messege, Player player) {
+        System.out.println(messege);
 
-  }
+        switch (messege.getType()) {
 
-  public void processMessege(Messege messege, Player player) {
-    System.out.println(messege);
+            case NEW_PLAYER: {
+                NewPlayer newPlayer = (NewPlayer) messege;
+                players.add(new Player(newPlayer.getPlayerName()));
+                return new NewPlayerEvent(getPlayerByName(newPlayer.getPlayerName()));
+            }
 
-    switch (messege.getType()) {
+            case PLAYER_MESSEGE: {
+                PlayerMessege playerMessege = (PlayerMessege) messege;
+                return new PlayerMessegeEvent(player, playerMessege.getMessege());
+            }
+            case ATTACK: {
+                AttackMessege attackMessege = (AttackMessege) messege;
+                Player player1 = getPlayerByName(attackMessege.getAttacker());
+                Player player2 = getPlayerByName(attackMessege.getVictim());
 
-      case NEW_PLAYER: {
-        NewPlayer newPlayerMessege = (NewPlayer) messege;
-        if(!messegeQueues.containsKey(getPlayerByName(newPlayerMessege.getPlayerName()))) {
-          player.setName(newPlayerMessege.getPlayerName());
-          addPlayer(player);
+                if (!(player1.isBattling() || player2.isBattling())) {
+                    currentBattles.add(new Battle(player1, player2));
+                }
+                return new EmptyEvent();
+            }
+
+            case BATTLE_TURN: {
+                BattleMessege battleMessege = (BattleMessege) messege;
+                return new EmptyEvent();
+            }
         }
-      }break;
-
-      case PLAYER_MESSEGE: {
-        PlayerMessege playerMessege = (PlayerMessege) messege;
-        sendMessage(getPlayerByName(playerMessege.getRecipient()), playerMessege.getMessege());
-      }break;
-
-      case ATTACK: {
-        AttackMessege attackMessege = (AttackMessege) messege;
-        Player player1 = getPlayerByName(attackMessege.getAttacker());
-        Player player2 = getPlayerByName(attackMessege.getVictim());
-
-        if(!(player1.isBattling() || player2.isBattling())) {
-          currentBattles.add(new Battle(player1, player2));
-        }
-      }break;
-
-      case BATTLE_TURN: {
-        BattleMessege battleMessege = (BattleMessege) messege;
-
-      }
+        return new EmptyEvent();
     }
-  }
+
+    private Player getPlayerByName(String name) {
+        Map<String, List<Player>> collect = players.stream()
+                .collect(Collectors.groupingBy(Player::getName));
+
+        return collect.get(name).get(0);
+    }
+
+    private class EmptyEvent implements ServerEvent {
+
+        @Override
+        public void execute(List<Connection> connections) {
+            //nohting happens here
+        }
+    }
 }
 

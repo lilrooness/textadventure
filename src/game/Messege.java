@@ -1,11 +1,13 @@
 package game;
 
+import java.io.Serializable;
+
 /**
  * Created by Joseph Frangoudes on 04/02/2015.
  *
  * @author Joseph Frangoudes
  */
-public class Messege {
+public class Messege implements Serializable {
 
   private MessegeType type;
 
@@ -25,6 +27,7 @@ public class Messege {
     NEW_PLAYER,
     PLAYER_MESSEGE,
     ATTACK,
-    BATTLE_TURN
+    BATTLE_TURN,
+    PLAYER_CONNECTED
   }
 }
