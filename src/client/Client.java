@@ -2,7 +2,9 @@ package client;
 
 import game.*;
 import server.NewPlayer;
+import server.PlayerMessege;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -16,30 +18,36 @@ import java.util.Map;
  *
  * @author Joseph Frangoudes
  */
-public class GameClient {
+public class Client {
 
   private Socket socket;
   private ObjectInputStream in;
   private ObjectOutputStream out;
 
   private Map<String, Player> players;
+  ClientGame clientGame;
 
-  public GameClient() {
+  public Client() {
 
     players = new HashMap<>();
 
     socket = new Socket();
 
+    String name = JOptionPane.showInputDialog("Name:");
+    String host = JOptionPane.showInputDialog("Host");
+
     try {
-      socket.connect(new InetSocketAddress("localhost", 7000));
+      socket.connect(new InetSocketAddress(host, 7000));
       out = new ObjectOutputStream(socket.getOutputStream());
 
       NewPlayer connectionMessege =
-              new NewPlayer(Messege.MessegeType.NEW_PLAYER, "Lilroo");
+              new NewPlayer(Messege.MessegeType.NEW_PLAYER, name);
       out.writeObject(connectionMessege);
     } catch (IOException e) {
       e.printStackTrace();
     }
+
+    clientGame = new ClientGame(name);
 
     new Thread(new SocketListener()).start();
   }
@@ -71,15 +79,17 @@ public class GameClient {
       case NEW_PLAYER: {
         NewPlayer playerConnected = (NewPlayer) messege;
         System.out.println(playerConnected.getPlayerName());
+        clientGame.getPlayers().add(playerConnected.getPlayerName());
       } break;
 
       case PLAYER_MESSEGE: {
         PlayerMessege playerMessege = (PlayerMessege) messege;
+        System.out.printf(playerMessege.getMessege());
       } break;
     }
   }
 
   public static void main(String[] args) {
-    new GameClient();
+    new Client();
   }
 }

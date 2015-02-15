@@ -1,4 +1,6 @@
-package game;
+package server;
+
+import game.Messege;
 
 /**
  * Created by Joseph Frangoudes on 06/02/2015.

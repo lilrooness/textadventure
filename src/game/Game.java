@@ -66,7 +66,7 @@ public class Game {
 
         @Override
         public void execute(List<Connection> connections) {
-            //nohting happens here
+            //nothing happens here
         }
     }
 }
